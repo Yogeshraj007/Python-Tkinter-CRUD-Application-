@@ -1,0 +1,159 @@
+
+from tkinter import *
+import sqlite3 
+import tkinter.ttk as ttk
+import tkinter.messagebox as tkmessagebox
+
+root = Tk()
+root.title("A Simple CRUD App")
+
+# Methods
+def Database():
+    global conn, cursor
+    conn = sqlite3.connect('simple.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS member(
+        mem_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        firstname TEXT,
+        lastname TEXT,
+        gender TEXT,
+        address TEXT,
+        username TEXT,
+        password TEXT
+    )''')
+    conn.commit()
+
+def create(): 
+    if (firstname.get().strip() == "" or 
+        lastname.get().strip() == "" or 
+        gender.get().strip() == "" or 
+        address.get().strip() == "" or 
+        username.get().strip() == "" or 
+        password.get().strip() == ""):
+        txt_result.config(text="Please enter all fields", fg="red")
+    else:
+        Database()
+        cursor.execute("INSERT INTO member(firstname, lastname, gender, address, username, password) VALUES (?, ?, ?, ?, ?, ?)",
+                       (firstname.get(), lastname.get(), gender.get(), address.get(), username.get(), password.get()))
+        conn.commit()
+        firstname.set("")
+        lastname.set("")
+        gender.set("")
+        address.set("")
+        username.set("")
+        password.set("")
+        cursor.close()                     
+        conn.close()
+        txt_result.config(text="Record inserted", fg="green")
+        
+def read():
+    tree.delete(*tree.get_children())
+    Database()
+    cursor.execute("SELECT * FROM member ORDER BY lastname ASC")
+    fetch = cursor.fetchall()
+    for data in fetch:
+        tree.insert('', 'end', values=(data[1], data[2], data[3], data[4], data[5], data[6]))
+    cursor.close()
+    txt_result.config(text='Successfully fetched', fg="black")
+
+def exit_app():
+    result = tkmessagebox.askquestion("Do you want to exit? (y/n)", icon='warning')
+    if result == "yes":
+        root.destroy()
+
+# Variable declaration
+firstname = StringVar()
+lastname = StringVar()
+gender = StringVar()
+address = StringVar()
+username = StringVar()
+password = StringVar()
+
+# Frame
+Top = Frame(root, width=900, height=50, bd=8, relief='raise')
+Top.pack(side=TOP)
+left = Frame(root, width=300, height=500, bd=8, relief="raise")
+left.pack(side=LEFT)
+Right = Frame(root, width=600, height=500, bd=8, relief="raise")
+Right.pack(side=RIGHT)
+
+Forms = Frame(left, width=300, height=450)
+Forms.pack(side=TOP)
+button = Frame(left, width=300, height=1000, bd=8, relief="raise")
+button.pack(side=BOTTOM)
+RadioGroup = Frame(Forms)
+Male = Radiobutton(RadioGroup, text="Male", variable=gender, value='male').pack(side=LEFT)
+Female = Radiobutton(RadioGroup, text="Female", variable=gender, value='female').pack(side=LEFT)
+
+# Label widget
+txt_title = Label(Top, width=900, font=('arail', 24), text="Python: Simple CRUD App")
+txt_title.pack()
+txt_firstname = Label(Forms, text="First Name: ", font=("arail", 16), bd=15)
+txt_firstname.grid(row=0, sticky='e')
+txt_lastname = Label(Forms, text="Last Name: ", font=("arail", 16), bd=15)
+txt_lastname.grid(row=1, sticky='e')
+txt_gender = Label(Forms, text="Gender: ", font=("arail", 16), bd=15)
+txt_gender.grid(row=2, sticky='e')
+txt_address = Label(Forms, text="Address: ", font=("arail", 16), bd=15)
+txt_address.grid(row=3, sticky='e')
+txt_username = Label(Forms, text="Username: ", font=("arail", 16), bd=15)
+txt_username.grid(row=4, sticky='e')
+txt_password = Label(Forms, text="Password: ", font=("arail", 16), bd=15)
+txt_password.grid(row=5, sticky='e')
+
+# Result Label
+txt_result = Label(left, text="", font=("arail", 12))
+txt_result.pack(side=BOTTOM, pady=10)
+
+# Entry widget
+firstname_entry = Entry(Forms, textvariable=firstname, width=30)
+firstname_entry.grid(row=0, column=1)
+lastname_entry = Entry(Forms, textvariable=lastname, width=30)
+lastname_entry.grid(row=1, column=1)
+RadioGroup.grid(row=2, column=1)
+address_entry = Entry(Forms, textvariable=address, width=30)
+address_entry.grid(row=3, column=1)
+username_entry = Entry(Forms, textvariable=username, width=30)
+username_entry.grid(row=4, column=1)
+password_entry = Entry(Forms, textvariable=password, width=30, show="*")
+password_entry.grid(row=5, column=1)
+
+# Buttons
+btn_create = Button(button, width=10, text="CREATE", command=create)
+btn_create.pack(side=LEFT)
+btn_read = Button(button, width=10, text="READ", command=read)
+btn_read.pack(side=LEFT)
+btn_update = Button(button, width=10, text="UPDATE", state=DISABLED)
+btn_update.pack(side=LEFT)
+btn_delete = Button(button, width=10, text="DELETE", state=DISABLED)
+btn_delete.pack(side=LEFT)
+btn_exit = Button(button, width=10, text="EXIT", command=exit_app)
+btn_exit.pack(side=LEFT)
+
+# List widget
+scrollbary = Scrollbar(Right, orient=VERTICAL)
+scrollbarx = Scrollbar(Right, orient=HORIZONTAL)
+
+tree = ttk.Treeview(Right, columns=("firstname", "lastname", "gender", "address", "username", "password"))
+scrollbary.config(command=tree.yview)
+scrollbary.pack(side=RIGHT, fill=Y)
+scrollbarx.config(command=tree.xview)
+scrollbarx.pack(side=BOTTOM, fill=X)
+tree.heading('firstname', text="First Name", anchor=W)
+tree.heading('lastname', text="Last Name", anchor=W)
+tree.heading('gender', text="Gender", anchor=W)
+tree.heading('address', text="Address", anchor=W)
+tree.heading('username', text="Username", anchor=W)
+tree.heading('password', text="Password", anchor=W)
+
+tree.column('#0', stretch='No', minwidth=0, width=0)
+tree.column('#1', stretch='No', minwidth=0, width=180)
+tree.column('#2', stretch='No', minwidth=0, width=120)
+tree.column('#3', stretch='No', minwidth=0, width=80)
+tree.column('#4', stretch='No', minwidth=0, width=150)
+tree.column('#5', stretch='No', minwidth=0, width=120)
+tree.column('#6', stretch='No', minwidth=0, width=120)
+tree.pack()
+
+if __name__ == '__main__':
+    root.mainloop()
